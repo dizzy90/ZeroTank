@@ -4,8 +4,6 @@ echo "changing directory to user..."
 cd ~
 echo "running apt-get update..."
 sudo apt-get update
-echo "running apt-get upgrade..."
-sudo apt-get upgrade -y
 echo "installing git, node.js, npm, pigpio..."
 sudo apt-get install -y git, node.js npm pigpio
 echo "entering ZeroTank dir..."
