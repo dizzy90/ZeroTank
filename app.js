@@ -1,13 +1,14 @@
 const express = require("express");
 const app = express();
-var http = require('http').Server(app);
-var io = require('socket.io')(http);
-var exec = require('child_process').exec, child;
-var port = process.env.PORT || 80;
+const http = require('http').Server(app);
+const  port = process.env.PORT || 80;
+const  io = require('socket.io')(http);
+var  exec = require('child_process').exec, child;
+
+const start_cam = 'sudo bash /home/pi/ZeroTank/stream.sh';
+const stop_cam  = 'sudo killall mjpg_streamer';
 var temp_report = false;        // Is temperature being reported?
 var conn_count = 0;             // Number of connections to server
-const start_cam = "sudo bash /home/pi/touchUI/start_stream.sh"
-const stop_cam  = 'sudo killall mjpg_streamer';
 
 var Gpio = require('pigpio').Gpio,
     A1    = new Gpio(27, {mode: Gpio.OUTPUT}),
@@ -73,13 +74,19 @@ io.on('connection', function(socket) {
         }
     });
 
-    socket.on('power', function(toggle) {
+    socket.on('power', function(input) {
         child = exec("sudo poweroff");
+    });
+
+    socket.on('reboot', function(input) {
+        child = exec("sudo reboot");
     });
 
     socket.on('cam_state', function(toggle) {
         if (toggle == 1) {
-            child = exec(start_cam, function(error, stdout, stderr) {});
+            child = exec(start_cam, function(error, stdout, stderr) {
+                io.emit('cam', 1);
+            });
         }
         else {
             child = exec(stop_cam, function(error, stdout, stderr) {});
@@ -90,14 +97,14 @@ io.on('connection', function(socket) {
         LED.digitalWrite(toggle);    
     });  
 
-    socket.on('cam', function(toggle) {
+    socket.on('cam', function(input) {
         console.log('Taking a picture..');
 
         var timestamp = getTimestamp();
         // Turn off stream, take photo, start stream
-        var command = 'sudo killall mjpg_streamer ; raspistill -o /home/pi/pictures/cam_' + timestamp + '.jpg -n && sudo bash /home/pi/touchUI/start_stream.sh';
-        console.log("command: ", command);
-        child = exec(command, function(error, stdout, stderr) {
+        var take_picture = stop_cam + ' ; raspistill -o /home/pi/pictures/cam_' + timestamp + '.jpg -n && ' + start_cam;
+        console.log("command: ", take_picture);
+        child = exec(take_picture, function(error, stdout, stderr) {
             io.emit('cam', 1);
         });
     });

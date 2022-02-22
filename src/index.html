@@ -40,6 +40,13 @@
             }
         }
 
+        function reboot() {
+            if (confirm("This will reboot the Pi.\nAre you sure?")) {
+                alert('Rebooting...\nPlease wait a few minutes before refreshing.');
+                socket.emit('reboot', 1);
+            }
+        }
+
         // Handle Cam button
         function handleCamClick(cb) {
             if (cb.checked) {
@@ -71,10 +78,11 @@
         <center id="temp" style="padding:40%;">0°C</center>
     </div>
     <div class="sidenav" style="right:0;z-index: 2;">
-        <center class="off_button" type="button" onclick="shutdown()">OFF</center>
+        <center class="regular_button" type="button" onclick="shutdown()">OFF</center>
+        <center class="regular_button" type="button" onclick="reboot()">Reboot</center>
         <center class="cam_button" type="button" onclick="takePicture()"></center>
         <div class="switch">
-            <input id="cmn-toggle"css class="cmn-toggle cmn-toggle-round-flat" type="checkbox" onclick="handleCamClick(this)">
+            <input id="cmn-toggle"css class="cmn-toggle cmn-toggle-round-flat" type="checkbox" onclick="handleCamClick(this)" checked>
             <label for="cmn-toggle">Cam</label>
         </div>
         <div class="switch">

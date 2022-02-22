@@ -79,7 +79,7 @@ input.cmn-toggle-round-flat:checked + label {
     background-color: gray;
 }
 
-.off_button {
+.regular_button {
 background-color: transparent;
     border-radius: 10%;
     border: 2px;
@@ -94,11 +94,11 @@ background-color: transparent;
     cursor: pointer;
 }
 
-.off_button:active {
+.regular_button:active {
     background-color: gray;
 }
 
-.light_button {
+.check_button {
 background-color: transparent;
     border-radius: 10%;
     border: 2px;
@@ -113,7 +113,7 @@ background-color: transparent;
     cursor: pointer;
 }
 
-.light_button:checked {
+.check_button:checked {
     background-color: #b1b;
 }
 
