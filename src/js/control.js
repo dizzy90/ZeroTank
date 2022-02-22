@@ -207,16 +207,10 @@ function draw() {
         temperature = msg;
     });
 
-    socket.on('volt', function(msg){
-        voltage = msg;
-        if(voltage > 0){ // Don't show voltage without ADC
-            document.getElementById("volt").innerHTML = msg.toFixed(2) + 'V';
-        }
-        else{
-            document.getElementById("volt").innerHTML = ' ';
-        }
+    socket.on('chargestate', function(msg){
+        document.getElementById("chargestate").innerHTML = msg;
     });
-    
+
     socket.on('cam', function(msg){
         document.getElementById("stream").innerHTML = img;
     });

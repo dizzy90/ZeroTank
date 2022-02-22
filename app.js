@@ -7,15 +7,26 @@ var  exec = require('child_process').exec, child;
 
 const start_cam = 'sudo bash /home/pi/ZeroTank/stream.sh';
 const stop_cam  = 'sudo killall mjpg_streamer';
-var temp_report = false;        // Is temperature being reported?
-var conn_count = 0;             // Number of connections to server
+var do_report = false;      // Is temperature being reported?
+var conn_count = 0;         // Number of connections to server
+var charging = 0;           // 0 = battery, 1 = charging, 2 = fully charged
 
-var Gpio = require('pigpio').Gpio,
-    A1    = new Gpio(27, {mode: Gpio.OUTPUT}),
-    A2    = new Gpio(22, {mode: Gpio.OUTPUT}),
-    B1    = new Gpio(23, {mode: Gpio.OUTPUT}),
-    B2    = new Gpio(24, {mode: Gpio.OUTPUT}),
-    LED   = new Gpio(25, {mode: Gpio.OUTPUT});
+const Gpio = require('pigpio').Gpio;
+const A1      = new Gpio(27, {mode: Gpio.OUTPUT});
+const A2      = new Gpio(22, {mode: Gpio.OUTPUT});
+const B1      = new Gpio(23, {mode: Gpio.OUTPUT});
+const B2      = new Gpio(24, {mode: Gpio.OUTPUT});
+const LED     = new Gpio(25, {mode: Gpio.OUTPUT});
+const CHRG_C  = new Gpio(5,  {
+    mode: Gpio.INPUT,
+    pullUpDown: Gpio.PUD_DOWN,
+    edge: Gpio.EITHER_EDGE
+});
+const CHRG_F  = new Gpio(6,  {
+    mode: Gpio.INPUT,
+    pullUpDown: Gpio.PUD_DOWN,
+    edge: Gpio.EITHER_EDGE
+});
 
 app.use(express.static(__dirname + '/src'));
 
@@ -74,11 +85,11 @@ io.on('connection', function(socket) {
         }
     });
 
-    socket.on('power', function(input) {
+    socket.on('power', function(value) {
         child = exec("sudo poweroff");
     });
 
-    socket.on('reboot', function(input) {
+    socket.on('reboot', function(value) {
         child = exec("sudo reboot");
     });
 
@@ -97,7 +108,7 @@ io.on('connection', function(socket) {
         LED.digitalWrite(toggle);    
     });  
 
-    socket.on('cam', function(input) {
+    socket.on('cam', function(value) {
         console.log('Taking a picture..');
 
         var timestamp = getTimestamp();
@@ -118,13 +129,37 @@ io.on('connection', function(socket) {
         if (conn_count == 0) {
             console.log('Killing temp report, ID: ' + doTemps);
             clearInterval(doTemps);
-            temp_report = false;
+            do_report = false;
             child = exec(stop_cam, function(error, stdout, stderr) {});
         }
     });
 
-    if (temp_report == false) {
-        temp_report = true;
+    CHRG_C.on('interrupt', (value) => {
+        if (value == 1) {
+            console.log("CHARGING: YES");
+            charging = 1;
+        }
+        else {
+            charging = 0;
+        }
+    });
+
+    CHRG_F.on('interrupt', (value) => {
+        if (value == 1) {
+            console.log("CHARGING: FULL");
+            charging = 2;
+        }
+        else {
+            console.log("CHARGING: NO");
+            charging = 0;
+        }
+    });
+
+
+    if (do_report == false) {
+        do_report = true;
+
+        // Handle temperature reporting
         doTemps = setInterval(function() { // send temperature every 5 sec
             var child = exec("cat /sys/class/thermal/thermal_zone0/temp", function(error, stdout, stderr) {
                 if (error !== null) {
@@ -134,6 +169,19 @@ io.on('connection', function(socket) {
                     var temp = parseFloat(stdout)/1000;
                     io.emit('temp', temp);
                     console.log('temp', temp);
+                }
+
+                // Handle charging status reporting
+                switch (charging) {
+                    case 0:
+                        io.emit('chargestate', "Batt. Power");
+                        break;
+                    case 1:
+                        io.emit('chargestate', "Batt. Charging");
+                        break;
+                    case 2:
+                        io.emit('chargestate', "Batt. Charged");
+                        break;
                 }
             });
         }, 5000);
