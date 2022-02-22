@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang=en>
+<head>
+    <meta charset=utf-8>
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" /> 
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>tankPi | Controls</title>
+    <link rel="stylesheet"  type="text/css" href="/css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
+    <ul id="messages"></ul>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/control.js"></script>
+</head>
+
+<body scroll="no" style="overflow: hidden">
+    <center>
+        <p id="stream"></p>
+    </center>
+
+    <script>
+        // Delay page load for 1 second so camera stream catches up
+        setTimeout(pageTimeout, 1000);
+        function pageTimeout () {
+        }
+
+        // Get host path used
+        host = window.location.hostname;
+        img = '<img src="http://' + host + ':9000/?action=stream" style="height:100vh;"/>';
+        //img = '<img src="stream.png" style="height:100vh;"/>';
+        document.getElementById("stream").innerHTML = img;
+
+        function takePicture() {
+            socket.emit('cam', 1);
+        }
+
+        function shutdown() {
+            if (confirm("This will shutdown the Pi.\nAre you sure?")) {
+                alert('Shutting down...\nPlease wait 20s before turning the power off.');
+                socket.emit('power', 1);
+            }
+        }
+
+        // Handle Cam button
+        function handleCamClick(cb) {
+            if (cb.checked) {
+                // Turn on
+                cam_toggle = 1;
+            }
+            else {
+                // Turn off
+                cam_toggle = 0;
+            }
+            socket.emit('cam_state', cam_toggle);
+        }
+
+        // Handle IR-LED button
+        function handleIRLEDClick(cb) {
+            if (cb.checked) {
+                // Turn on
+                LED_toggle = 1;
+            }
+            else {
+                // Turn off
+                LED_toggle = 0;
+            }
+            socket.emit('irled', LED_toggle);
+        }
+    </script>
+
+    <div class="sidenav">
+        <center id="temp" style="padding:40%;">0°C</center>
+    </div>
+    <div class="sidenav" style="right:0;z-index: 2;">
+        <center class="off_button" type="button" onclick="shutdown()">OFF</center>
+        <center class="cam_button" type="button" onclick="takePicture()"></center>
+        <div class="switch">
+            <input id="cmn-toggle"css class="cmn-toggle cmn-toggle-round-flat" type="checkbox" onclick="handleCamClick(this)">
+            <label for="cmn-toggle">Cam</label>
+        </div>
+        <div class="switch">
+            <input id="cmn-toggle2"css class="cmn-toggle cmn-toggle-round-flat" type="checkbox" onclick="handleIRLEDClick(this)">
+            <label for="cmn-toggle2">IR LED</label>
+        </div>
+    <div>
+
+    <div style="position:fixed;bottom:40vh;right:0;padding:25px"></div>
+</body>
+</html>

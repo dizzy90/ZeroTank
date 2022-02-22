@@ -1,0 +1,137 @@
+* {
+  -webkit-touch-callout: none; /* prevent callout to copy image, etc when tap to hold */
+  -webkit-text-size-adjust: none; /* prevent webkit from resizing text to fit */
+/* make transparent link selection, adjust last value opacity 0 to 1.0 */
+  -webkit-tap-highlight-color: rgba(0,0,0,0); 
+  -webkit-user-select: none; /* prevent copy paste, to allow, change 'none' to 'text' */
+  -webkit-tap-highlight-color: rgba(0,0,0,0); 
+}
+
+body {
+    background-color: #000000;
+    margin: 0px;
+}
+
+canvas {
+    display:block; 
+    position:absolute; 
+    z-index: 1;
+}
+
+.container {
+    width:auto;
+    text-align:center;
+    background-color:#ff0000;
+}
+
+.cmn-toggle {
+    position: absolute;
+    margin-left: -9999px;
+    visibility: hidden;
+}
+
+.cmn-toggle + label {
+    display: block;
+    position: relative;
+    cursor: pointer;
+    outline: none;
+    user-select: none;
+}
+
+input.cmn-toggle-round-flat + label {
+    background-color: transparent;
+    border-radius: 10%;
+    border: 2px;
+    border-style: solid;
+    border-color: white;
+    text-align:center;
+
+    padding-top: 10%;
+    padding-bottom: 10%;
+    font-size: 16px;
+    margin: 10% 7% 10%;
+    cursor: pointer;
+    transition: background 0.4s;
+}
+
+input.cmn-toggle-round-flat:checked + label {
+    background-color: gray;
+}
+
+.cam_button {
+    background-color: transparent;
+    border-radius: 100%;
+    border: 7px;
+    border-style: solid;
+    border-color: white;
+    text-align:center;
+    
+    padding-top: 40%;
+    padding-bottom: 40%;
+    padding-left: 40%;
+    padding-right: 40%;
+    font-size: 16px;
+    margin: 15% 3% 15% 4%;
+    cursor: pointer;
+}
+
+.cam_button:active {
+    background-color: gray;
+}
+
+.off_button {
+background-color: transparent;
+    border-radius: 10%;
+    border: 2px;
+    border-style: solid;
+    border-color: white;
+    text-align:center;
+    
+    padding-top: 5%;
+    padding-bottom: 5%;
+    font-size: 100%;
+    margin: 5% 7%;
+    cursor: pointer;
+}
+
+.off_button:active {
+    background-color: gray;
+}
+
+.light_button {
+background-color: transparent;
+    border-radius: 10%;
+    border: 2px;
+    border-style: solid;
+    border-color: white;
+    text-align:center;
+
+    padding-top: 20%;
+    padding-bottom: 20%;
+    font-size: 16px;
+    margin: 40% 7% 10%;
+    cursor: pointer;
+}
+
+.light_button:checked {
+    background-color: #b1b;
+}
+
+.sidenav {
+    color: #fff;
+    height: 100%;
+    width: 13%;
+    position: fixed;
+    z-index: 0;
+    top: 0px;
+    background-color: #111;
+    overflow-x: hidden;
+    padding-top: 20px;
+    font-family: 'Roboto', sans-serif;
+}
+
+p#stream{
+    position: relative; 
+    top: -15px; 
+}
+
