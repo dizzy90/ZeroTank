@@ -1,35 +1,29 @@
-const express = require("express");
-const app = express();
-const http = require('http').Server(app);
-const  port = process.env.PORT || 80;
-const  io = require('socket.io')(http);
-var  exec = require('child_process').exec, child;
+const express   = require("express");
+const app       = express();
+const http      = require('http').Server(app);
+const port      = process.env.PORT || 80;
+const io        = require('socket.io')(http);
+var  exec       = require('child_process').exec, child;
+
+const Gpio = require('pigpio').Gpio;
+const A1        = new Gpio(27, {mode: Gpio.OUTPUT});
+const A2        = new Gpio(22, {mode: Gpio.OUTPUT});
+const B1        = new Gpio(23, {mode: Gpio.OUTPUT});
+const B2        = new Gpio(24, {mode: Gpio.OUTPUT});
+const LED       = new Gpio(25, {mode: Gpio.OUTPUT});
+const CHRG_C    = new Gpio(5,  {mode: Gpio.INPUT});
+const CHRG_F    = new Gpio(6,  {mode: Gpio.INPUT});
 
 const start_cam = 'sudo bash /home/pi/ZeroTank/stream.sh';
 const stop_cam  = 'sudo killall mjpg_streamer';
-var do_report = false;      // Is temperature being reported?
-var conn_count = 0;         // Number of connections to server
-var charging = 0;           // 0 = battery, 1 = charging, 2 = fully charged
+var report      = false;        // Is reporting activated?
+var conn_count  = 0;            // Number of connections to server
+var charging    = 0;            // 0 = battery, 1 = charging, 2 = fully charged
 
-const Gpio = require('pigpio').Gpio;
-const A1      = new Gpio(27, {mode: Gpio.OUTPUT});
-const A2      = new Gpio(22, {mode: Gpio.OUTPUT});
-const B1      = new Gpio(23, {mode: Gpio.OUTPUT});
-const B2      = new Gpio(24, {mode: Gpio.OUTPUT});
-const LED     = new Gpio(25, {mode: Gpio.OUTPUT});
-const CHRG_C  = new Gpio(5,  {
-    mode: Gpio.INPUT,
-    pullUpDown: Gpio.PUD_DOWN,
-    edge: Gpio.EITHER_EDGE
-});
-const CHRG_F  = new Gpio(6,  {
-    mode: Gpio.INPUT,
-    pullUpDown: Gpio.PUD_DOWN,
-    edge: Gpio.EITHER_EDGE
-});
-
+// Define where .html resides
 app.use(express.static(__dirname + '/src'));
 
+// Define main page (index)
 app.get('/', (req, res) => {
     res.sendfile('index.html');
     console.log('HTML sent to client');
@@ -39,14 +33,25 @@ app.get('/', (req, res) => {
 function getTimestamp () {
     var date = new Date();
 
-    var day = date.getDate();
-    var month = date.getMonth();
-    var year = date.getFullYear();
-    var hour = date.getHours();
-    var min = date.getMinutes();
-    var sec = date.getSeconds();
+    var day     = date.getDate();
+    var month   = date.getMonth();
+    var year    = date.getFullYear();
+    var hour    = date.getHours();
+    var min     = date.getMinutes();
+    var sec     = date.getSeconds();
 
-    var timestamp = day + "-" + (++month) + "-" + year + "_" + hour + "_" + min + "_" + sec;
+    // January is 0...
+    month = month + 1;
+
+    // Handle single digit date/month
+    if (day.toString().length == 1) {
+        day = '0' + day.toString();
+    }
+    if (month.toString().length == 1) {
+        month = '0' + month.toString();
+    }
+
+    var timestamp = day + "-" + month + "-" + year + "_" + hour + min + sec;
     return timestamp;
 }
 
@@ -58,6 +63,7 @@ io.on('connection', function(socket) {
     // Start camera
     child = exec(start_cam, function(error, stdout, stderr) {});
 
+    // Handle motor request
     socket.on('pos', function (msx, msy) {
         // Debug motors
         //console.log('X:' + msx + ' Y: ' + msy);
@@ -85,14 +91,17 @@ io.on('connection', function(socket) {
         }
     });
 
+    // Handle power off request
     socket.on('power', function(value) {
         child = exec("sudo poweroff");
     });
 
+    // Handle reboot request
     socket.on('reboot', function(value) {
         child = exec("sudo reboot");
     });
 
+    // Handle camera on/off toggle request
     socket.on('cam_state', function(toggle) {
         if (toggle == 1) {
             child = exec(start_cam, function(error, stdout, stderr) {
@@ -104,10 +113,12 @@ io.on('connection', function(socket) {
         }
     });
 
+    // Handle IR LED on/off toggle request
     socket.on('irled', function(toggle) {
         LED.digitalWrite(toggle);    
     });  
 
+    // Handle taking picture request
     socket.on('cam', function(value) {
         console.log('Taking a picture..');
 
@@ -120,47 +131,11 @@ io.on('connection', function(socket) {
         });
     });
   
-    // Whenever someone disconnects this piece of code is executed
-    socket.on('disconnect', function () {
-        console.log('A user disconnected');
-        conn_count--;
-
-        // Only kill if no clients are connected
-        if (conn_count == 0) {
-            console.log('Killing temp report, ID: ' + doTemps);
-            clearInterval(doTemps);
-            do_report = false;
-            child = exec(stop_cam, function(error, stdout, stderr) {});
-        }
-    });
-
-    CHRG_C.on('interrupt', (value) => {
-        if (value == 1) {
-            console.log("CHARGING: YES");
-            charging = 1;
-        }
-        else {
-            charging = 0;
-        }
-    });
-
-    CHRG_F.on('interrupt', (value) => {
-        if (value == 1) {
-            console.log("CHARGING: FULL");
-            charging = 2;
-        }
-        else {
-            console.log("CHARGING: NO");
-            charging = 0;
-        }
-    });
-
-
-    if (do_report == false) {
-        do_report = true;
-
-        // Handle temperature reporting
-        doTemps = setInterval(function() { // send temperature every 5 sec
+    // Handle reporting to UI
+    if (report == false) {
+        report = true;
+        doReports = setInterval(function() { // send reports every 5 sec
+            // Handle temperature reporting
             var child = exec("cat /sys/class/thermal/thermal_zone0/temp", function(error, stdout, stderr) {
                 if (error !== null) {
                     console.log('exec error: ' + error);
@@ -170,22 +145,47 @@ io.on('connection', function(socket) {
                     io.emit('temp', temp);
                     console.log('temp', temp);
                 }
-
-                // Handle charging status reporting
-                switch (charging) {
-                    case 0:
-                        io.emit('chargestate', "Batt. Power");
-                        break;
-                    case 1:
-                        io.emit('chargestate', "Batt. Charging");
-                        break;
-                    case 2:
-                        io.emit('chargestate', "Batt. Charged");
-                        break;
-                }
             });
+
+            // Handle charging status reporting
+            if (CHRG_C.digitalRead() == 1) {
+                charging = 1;
+            }
+            else if (CHRG_F.digitalRead() == 1) {
+                charging = 2;
+            }
+            else {
+                charging = 0;
+            }
+
+            switch (charging) {
+                case 0:
+                    io.emit('chargestate', "Battery Power");
+                    break;
+                case 1:
+                    io.emit('chargestate', "Battery Charging");
+                    break;
+                case 2:
+                    io.emit('chargestate', "Battery Charged");
+                    break;
+            }
         }, 5000);
     }
+
+    // Whenever someone disconnects this piece of code is executed
+    socket.on('disconnect', function () {
+        console.log('A user disconnected');
+        conn_count--;
+
+        // Only kill if no clients are connected
+        if (conn_count == 0) {
+            console.log('Killing reporter, ID: ' + doReports);
+            clearInterval(doReports);
+            report = false;
+            child = exec(stop_cam, function(error, stdout, stderr) {});
+        }
+    });
+
 });
 
 http.listen(port, function(){
