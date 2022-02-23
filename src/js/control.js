@@ -45,7 +45,6 @@ var canvas,
     leftTouchStartPos = new Vector2(0,0),
     leftVector = new Vector2(0,0);
 
-var temperature;
 var socket = io(); // comment this out for better debugging
 var sendFlag = false;
 
