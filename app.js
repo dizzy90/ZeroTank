@@ -198,7 +198,7 @@ io.on('connection', function(socket) {
                     io.emit('charge_state', "<font color='red'>Battery Charging</font>");
                     break;
                 case 2:
-                    io.emit('charge_state', "<font color='green'Battery Charged</font>");
+                    io.emit('charge_state', "<font color='green'>Battery Charged</font>");
                     break;
             }
         }, 5000);
