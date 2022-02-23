@@ -200,20 +200,7 @@ function draw() {
 
     //c.fillText("Left Motor: " + leftMot + " Right Motor: " + rightMot, 10, 30);
     //c.fillText("Left Vx: " + leftVector.x + " Left Vy: " + leftVector.y, 10, 50);
-    //c.fillText("Temperature: "+temperature+"°C", 10, 30);
 
-    socket.on('temp', function(msg){
-        document.getElementById("temp").innerHTML = parseInt(msg) + '°C';
-        temperature = msg;
-    });
-
-    socket.on('chargestate', function(msg){
-        document.getElementById("chargestate").innerHTML = msg;
-    });
-
-    socket.on('cam', function(msg){
-        document.getElementById("stream").innerHTML = img;
-    });
 }
 
 /*  

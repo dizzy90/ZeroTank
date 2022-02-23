@@ -11,14 +11,24 @@ const A2        = new Gpio(22, {mode: Gpio.OUTPUT});
 const B1        = new Gpio(23, {mode: Gpio.OUTPUT});
 const B2        = new Gpio(24, {mode: Gpio.OUTPUT});
 const LED       = new Gpio(25, {mode: Gpio.OUTPUT});
-const CHRG_C    = new Gpio(5,  {mode: Gpio.INPUT});
-const CHRG_F    = new Gpio(6,  {mode: Gpio.INPUT});
+// Charger pin - charging
+const CHRG_F    = new Gpio(5,  {
+    mode: Gpio.INPUT,
+    pullUpDown: Gpio.PUD_UP
+});
+// Charger pin - full charge
+const CHRG_C    = new Gpio(6,  {
+    mode: Gpio.INPUT,
+    pullUpDown: Gpio.PUD_UP
+});
 
 const start_cam = 'sudo bash /home/pi/ZeroTank/stream.sh';
 const stop_cam  = 'sudo killall mjpg_streamer';
-var report      = false;        // Is reporting activated?
+var reporting   = false;        // Is reporting activated?
 var conn_count  = 0;            // Number of connections to server
 var charging    = 0;            // 0 = battery, 1 = charging, 2 = fully charged
+var irled_state = 0;            // Sync IR LED state for all clients
+var strm_state  = 0;            // Sync stream state for all clients
 
 // Define where .html resides
 app.use(express.static(__dirname + '/src'));
@@ -60,8 +70,18 @@ io.on('connection', function(socket) {
     console.log('A user connected');
     // Count active users
     conn_count++;
-    // Start camera
-    child = exec(start_cam, function(error, stdout, stderr) {});
+    // Update states
+    io.emit('strm_state', strm_state);
+    io.emit('irled_state', irled_state);
+
+    // Start stream and limit to 1
+    if (!strm_state) {
+        child = exec(start_cam, function(error, stdout, stderr) {
+            strm_state = 1;
+            io.emit('cam', 1);
+            io.emit('strm_state', strm_state);
+        });
+    }
 
     // Handle motor request
     socket.on('pos', function (msx, msy) {
@@ -103,19 +123,26 @@ io.on('connection', function(socket) {
 
     // Handle camera on/off toggle request
     socket.on('cam_state', function(toggle) {
-        if (toggle == 1) {
+        if (toggle && !strm_state) {
             child = exec(start_cam, function(error, stdout, stderr) {
                 io.emit('cam', 1);
             });
         }
-        else {
-            child = exec(stop_cam, function(error, stdout, stderr) {});
+        else if (!toggle && strm_state) {
+            child = exec(stop_cam, function(error, stdout, stderr) {
+                strm_state = toggle;
+            });
         }
+
+        strm_state = toggle;
+        io.emit('strm_state', strm_state);
     });
 
     // Handle IR LED on/off toggle request
     socket.on('irled', function(toggle) {
-        LED.digitalWrite(toggle);    
+        LED.digitalWrite(toggle);
+        irled_state = toggle;
+        io.emit('irled_state', irled_state);
     });  
 
     // Handle taking picture request
@@ -132,8 +159,8 @@ io.on('connection', function(socket) {
     });
   
     // Handle reporting to UI
-    if (report == false) {
-        report = true;
+    if (!reporting) {
+        reporting = true;
         doReports = setInterval(function() { // send reports every 5 sec
             // Handle temperature reporting
             var child = exec("cat /sys/class/thermal/thermal_zone0/temp", function(error, stdout, stderr) {
@@ -143,15 +170,20 @@ io.on('connection', function(socket) {
                 else {
                     var temp = parseFloat(stdout)/1000;
                     io.emit('temp', temp);
-                    console.log('temp', temp);
+                    // Debug temps
+                    //console.log('temp', temp);
                 }
             });
 
             // Handle charging status reporting
-            if (CHRG_C.digitalRead() == 1) {
+            // Charger debug
+            //console.log("charging: " + CHRG_C.digitalRead());
+            //console.log("full: " + CHRG_F.digitalRead());
+
+            if (CHRG_C.digitalRead() == 0) {
                 charging = 1;
             }
-            else if (CHRG_F.digitalRead() == 1) {
+            else if (CHRG_F.digitalRead() == 0) {
                 charging = 2;
             }
             else {
@@ -160,13 +192,13 @@ io.on('connection', function(socket) {
 
             switch (charging) {
                 case 0:
-                    io.emit('chargestate', "Battery Power");
+                    io.emit('charge_state', "<font color='yellow'>Battery Power</font>");
                     break;
                 case 1:
-                    io.emit('chargestate', "Battery Charging");
+                    io.emit('charge_state', "<font color='red'>Battery Charging</font>");
                     break;
                 case 2:
-                    io.emit('chargestate', "Battery Charged");
+                    io.emit('charge_state', "<font color='green'Battery Charged</font>");
                     break;
             }
         }, 5000);
@@ -181,11 +213,19 @@ io.on('connection', function(socket) {
         if (conn_count == 0) {
             console.log('Killing reporter, ID: ' + doReports);
             clearInterval(doReports);
-            report = false;
-            child = exec(stop_cam, function(error, stdout, stderr) {});
+            reporting = false;
+
+            if (strm_state) {
+                child = exec(stop_cam, function(error, stdout, stderr) {});
+                strm_state = 0;
+            }
+
+            if (irled_state) {
+                irled_state = 0;
+                LED.digitalWrite(irled_state);
+            }
         }
     });
-
 });
 
 http.listen(port, function(){

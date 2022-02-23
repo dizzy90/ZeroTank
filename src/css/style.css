@@ -79,7 +79,7 @@ input.cmn-toggle-round-flat:checked + label {
     background-color: gray;
 }
 
-.regular_button {
+.cmn_button {
 background-color: transparent;
     border-radius: 10%;
     border: 2px;
@@ -94,7 +94,7 @@ background-color: transparent;
     cursor: pointer;
 }
 
-.regular_button:active {
+.cmn_button:active {
     background-color: gray;
 }
 
