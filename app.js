@@ -87,7 +87,6 @@ io.on('connection', function(socket) {
     socket.on('pos', function (msx, msy) {
         // Debug motors
         //console.log('X:' + msx + ' Y: ' + msy);
-        //io.emit('posBack', msx, msy);
 
         msx = Math.min(Math.max(parseInt(msx), -255), 255);
         msy = Math.min(Math.max(parseInt(msy), -255), 255);
@@ -143,7 +142,7 @@ io.on('connection', function(socket) {
         LED.digitalWrite(toggle);
         irled_state = toggle;
         io.emit('irled_state', irled_state);
-    });  
+    });
 
     // Handle taking picture request
     socket.on('cam', function(value) {
@@ -157,7 +156,7 @@ io.on('connection', function(socket) {
             io.emit('cam', 1);
         });
     });
-  
+
     // Handle reporting to UI
     if (!reporting) {
         reporting = true;

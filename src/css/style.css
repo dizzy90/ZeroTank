@@ -2,9 +2,9 @@
   -webkit-touch-callout: none; /* prevent callout to copy image, etc when tap to hold */
   -webkit-text-size-adjust: none; /* prevent webkit from resizing text to fit */
 /* make transparent link selection, adjust last value opacity 0 to 1.0 */
-  -webkit-tap-highlight-color: rgba(0,0,0,0); 
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
   -webkit-user-select: none; /* prevent copy paste, to allow, change 'none' to 'text' */
-  -webkit-tap-highlight-color: rgba(0,0,0,0); 
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
 }
 
 body {
@@ -13,8 +13,8 @@ body {
 }
 
 canvas {
-    display:block; 
-    position:absolute; 
+    display:block;
+    position:absolute;
     z-index: 1;
 }
 
@@ -65,7 +65,7 @@ input.cmn-toggle-round-flat:checked + label {
     border-style: solid;
     border-color: white;
     text-align:center;
-    
+
     padding-top: 40%;
     padding-bottom: 40%;
     padding-left: 40%;
@@ -86,7 +86,7 @@ background-color: transparent;
     border-style: solid;
     border-color: white;
     text-align:center;
-    
+
     padding-top: 5%;
     padding-bottom: 5%;
     font-size: 100%;
@@ -131,7 +131,7 @@ background-color: transparent;
 }
 
 p#stream{
-    position: relative; 
-    top: -15px; 
+    position: relative;
+    top: -15px;
 }
 
